@@ -1,0 +1,70 @@
+import serial
+import matplotlib.pyplot as plt
+from collections import deque
+import time
+
+PORT = 'COM5'   # change this
+BAUD = 115200
+
+ser = serial.Serial(PORT, BAUD, timeout=0.1)
+
+plt.style.use('fast')
+plt.ion()
+
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+max_points = 100
+
+ax_data = deque([0]*max_points, maxlen=max_points)
+ay_data = deque([0]*max_points, maxlen=max_points)
+az_data = deque([0]*max_points, maxlen=max_points)
+
+gx_data = deque([0]*max_points, maxlen=max_points)
+gy_data = deque([0]*max_points, maxlen=max_points)
+gz_data = deque([0]*max_points, maxlen=max_points)
+
+x_range = range(max_points)
+
+line_ax, = ax1.plot(x_range, ax_data)
+line_ay, = ax1.plot(x_range, ay_data)
+line_az, = ax1.plot(x_range, az_data)
+
+line_gx, = ax2.plot(x_range, gx_data)
+line_gy, = ax2.plot(x_range, gy_data)
+line_gz, = ax2.plot(x_range, gz_data)
+
+ax1.set_ylim(-2, 2)
+ax2.set_ylim(-500, 500)
+
+ax1.set_title("Accelerometer (g)")
+ax2.set_title("Gyroscope (deg/s)")
+
+plt.tight_layout()
+
+while True:
+    try:
+        while ser.in_waiting:  # read ALL available data
+            line = ser.readline().decode('utf-8').strip()
+            values = line.split(',')
+
+            if len(values) == 6:
+                ax_data.append(float(values[0]))
+                ay_data.append(float(values[1]))
+                az_data.append(float(values[2]))
+                gx_data.append(float(values[3]))
+                gy_data.append(float(values[4]))
+                gz_data.append(float(values[5]))
+
+        line_ax.set_ydata(ax_data)
+        line_ay.set_ydata(ay_data)
+        line_az.set_ydata(az_data)
+
+        line_gx.set_ydata(gx_data)
+        line_gy.set_ydata(gy_data)
+        line_gz.set_ydata(gz_data)
+
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+
+    except:
+        pass
